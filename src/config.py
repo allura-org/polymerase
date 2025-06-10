@@ -27,6 +27,7 @@ class DataConfig(Struct):
     path: str
     type: DataType
     format: DataFormat
+    limit: int | None = None
 
 class ProcessesConfig(Struct):
     parallel: int
