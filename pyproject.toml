@@ -1,7 +1,7 @@
 [project]
 name = "polymerase"
 version = "0.1.0"
-description = "Add your description here"
+description = "🧬 a small, asynchronous tool for running datasets of prompts against text generation APIs"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -11,6 +11,8 @@ dependencies = [
     "polars>=1.30.0",
     "trio>=0.30.0",
 ]
+license = "GPL-3.0 WITH Polymerase-Output-Exception"
+license-files = ["COPYING", "COPYING.exception"]
 
 [dependency-groups]
 dev = [

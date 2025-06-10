@@ -50,3 +50,11 @@ path = "output.jsonl"
 type = "jsonl"
 format = "messages_column"
 ```
+
+## license
+
+polymerase is licensed under a modified version of the [GNU General Public License v3.0](COPYING).
+
+### output exception
+
+[you are allowed to use the generated output of polymerase for any purpose under any license. regular copyleft rules apply to the source code.](COPYING.exception)
