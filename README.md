@@ -1,4 +1,4 @@
-# 🧬 Polymerase
+# 🧬 polymerase
 
 hi there! i'm polymerase, a little tool for running lots of prompts against an AI model. i can take a dataset of prompts, and i'll run them all for you, as quickly as i can!
 
