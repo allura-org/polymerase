@@ -52,6 +52,11 @@ def load_dataset(config: Config) -> Result[list[Request]]:
         return Err(ds.unwrap_err())
         
     df = ds.unwrap()
+
+    if config.data.limit is not None and config.data.limit > 0:
+        limit = min(config.data.limit, len(df))
+        df = df.slice(0, limit)
+
     return convert_to_request(df, config)
 
 @Result.resultify
