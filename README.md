@@ -58,3 +58,5 @@ polymerase is licensed under a modified version of the [GNU General Public Licen
 ### output exception
 
 [you are allowed to use the generated output of polymerase for any purpose under any license. regular copyleft rules apply to the source code.](COPYING.exception)
+
+however, we would appreciate it if you credited polymerase in any datasets using it that are released <3
