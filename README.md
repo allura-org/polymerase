@@ -44,11 +44,13 @@ format = "prompt_column"
 
 [processes]
 parallel = 2
+verify_parallel = 2
 
 [output]
 path = "output.jsonl"
 type = "jsonl"
 format = "messages_column"
+checkpoint_interval = 10
 ```
 
 ## license

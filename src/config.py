@@ -31,11 +31,13 @@ class DataConfig(Struct):
 
 class ProcessesConfig(Struct):
     parallel: int
+    verify_parallel: int | None = None
 
 class OutputConfig(Struct):
     path: str
     type: DataType
     format: DataFormat | None = None
+    checkpoint_interval: int | None = None
 
 class Config(Struct):
     api: APIConfig
