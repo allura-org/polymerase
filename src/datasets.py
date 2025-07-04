@@ -24,13 +24,16 @@ def convert_to_request(df: pl.DataFrame, config: Config) -> list[Request]:
     match format:
         case DataFormat.MESSAGES_COLUMN:
             # FIXME: won't work, we need to convert the list of dicts a proper Message[]
-            return [Request(messages=messages) for messages in [Message(role="system", content=system_prompt)] + df["messages"].to_list()]
+            if system_prompt is not None:
+                return [Request(messages=([Message(role="system", content=system_prompt)] + messages), temperature=config.model.temperature, top_p=config.model.top_p) for messages in df["messages"].to_list()]
+            else:
+                return [Request(messages=messages, temperature=config.model.temperature, top_p=config.model.top_p) for messages in df["messages"].to_list()]
         case DataFormat.PROMPT_COLUMN:
             if system_prompt is not None:
-                return [Request(messages=[Message(role="system", content=system_prompt), Message(role="user", content=prompt)]) for prompt in df["prompt"].to_list()]
+                return [Request(messages=[Message(role="system", content=system_prompt), Message(role="user", content=prompt)], temperature=config.model.temperature, top_p=config.model.top_p) for prompt in df["prompt"].to_list()]
             else:
                 # FIXME: we should support a `system_prompt` column
-                return [Request(messages=[Message(role="user", content=prompt)]) for prompt in df["prompt"].to_list()]
+                return [Request(messages=[Message(role="user", content=prompt)], temperature=config.model.temperature, top_p=config.model.top_p) for prompt in df["prompt"].to_list()]
         case _:
             raise ValueError(f"Invalid dataset format: {format}")
 
@@ -73,9 +76,10 @@ def convert_requests_to_dataframe(requests: list[Request], format: DataFormat) -
                         "content": msg.content,
                         "reasoning": msg.reasoning
                     }
-                    for msg in request.messages
+                    for msg in request.messages if msg.content != None
                 ]
                 data.append({"messages": messages_dict})
+            print(data[0])
             return pl.DataFrame(data)
         case DataFormat.PROMPT_COLUMN:
             # Extract prompts and responses
