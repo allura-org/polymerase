@@ -31,6 +31,7 @@ class DataConfig(Struct):
 
 class ProcessesConfig(Struct):
     parallel: int
+    verify_parallel: int | None = None
 
 class OutputConfig(Struct):
     path: str
