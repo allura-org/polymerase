@@ -36,6 +36,7 @@ class OutputConfig(Struct):
     path: str
     type: DataType
     format: DataFormat | None = None
+    checkpoint_interval: int | None = None
 
 class Config(Struct):
     api: APIConfig
