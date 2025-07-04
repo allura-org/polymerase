@@ -44,6 +44,7 @@ format = "prompt_column"
 
 [processes]
 parallel = 2
+verify_parallel = 2
 
 [output]
 path = "output.jsonl"

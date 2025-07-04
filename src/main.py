@@ -4,23 +4,30 @@ import trio
 from primitives import AsyncKVStore, AsyncQueue
 from messages import Request
 from config import Config
+from verification import verify_request
 from logbar import LogBar
 from logbar.progress import ProgressBar
 from datasets import load_dataset
 from output import save_requests, convert_requests_to_dataframe, save_dataframe
 
 @Result.resultify_async
-async def worker(http_client: AsyncHttpClient, kv_store: AsyncKVStore[str, int], input_queue: AsyncQueue[Request], output_queue: AsyncQueue[Request], log: LogBar, pb: ProgressBar, config: Config):
+async def worker(
+    http_client: AsyncHttpClient,
+    input_queue: AsyncQueue[Request],
+    verify_queue: AsyncQueue[Request],
+    log: LogBar,
+    config: Config,
+) -> None:
+    """Process requests and send results to the verification queue."""
     while True:
         request = await input_queue.dequeue()
         response = await request.unwrap().req(http_client, config.api.model)
         if is_ok(response):
-            await output_queue.enqueue(response.unwrap())
-            await kv_store.set("requests_completed", (await kv_store.get("requests_completed")).unwrap() + 1)
-            pb.next()
-            pb.draw()
+            await verify_queue.enqueue(response.unwrap())
         else:
-            log.error(f"Failed to process request, readding to input queue: {response.unwrap_err()}")
+            log.error(
+                f"Failed to process request, readding to input queue: {response.unwrap_err()}"
+            )
             await input_queue.enqueue(request.unwrap())
 
 @Result.resultify_async
@@ -54,6 +61,35 @@ async def output_worker(
             )
         else:
             log.error(f"Failed to save output: {save_result.unwrap_err()}")
+
+
+@Result.resultify_async
+async def verification_worker(
+    kv_store: AsyncKVStore[str, int],
+    input_queue: AsyncQueue[Request],
+    verify_queue: AsyncQueue[Request],
+    output_queue: AsyncQueue[Request],
+    log: LogBar,
+    pb: ProgressBar,
+) -> None:
+    """Verify requests and route them to the appropriate queue."""
+
+    while True:
+        request_res = await verify_queue.dequeue()
+        request = request_res.unwrap()
+
+        verified = verify_request(request)
+        if is_ok(verified) and verified.unwrap():
+            await output_queue.enqueue(request)
+            await kv_store.set(
+                "requests_completed",
+                (await kv_store.get("requests_completed")).unwrap() + 1,
+            )
+            pb.next()
+            pb.draw()
+        else:
+            log.error("Request failed verification, returning to input queue")
+            await input_queue.enqueue(request)
 
 
 @Result.resultify_async
@@ -104,9 +140,11 @@ async def main() -> Result[None]:
     http_client = AsyncHttpClient(base_url=config.api.base_url, headers={"Authorization": f"Bearer {config.api.api_key}"})
     kv_lock = trio.Lock()
     queue_lock = trio.Lock()
+    verify_lock = trio.Lock()
     output_lock = trio.Lock()
     kv_store = AsyncKVStore[str, int](default_value=0, lock=kv_lock)
     input_queue = AsyncQueue[Request](lock=queue_lock)
+    verify_queue = AsyncQueue[Request](lock=verify_lock)
     output_queue = AsyncQueue[Request](lock=output_lock)
     log = LogBar(name="main")
 
@@ -124,7 +162,24 @@ async def main() -> Result[None]:
     async with trio.open_nursery() as nursery:
         # Start worker processes
         for _ in range(config.processes.parallel):
-            nursery.start_soon(worker, http_client, kv_store, input_queue, output_queue, log, pb, config)
+            nursery.start_soon(worker, http_client, input_queue, verify_queue, log, config)
+
+        # Start verification worker(s)
+        verify_parallel = (
+            config.processes.verify_parallel
+            if config.processes.verify_parallel is not None
+            else config.processes.parallel
+        )
+        for _ in range(verify_parallel):
+            nursery.start_soon(
+                verification_worker,
+                kv_store,
+                input_queue,
+                verify_queue,
+                output_queue,
+                log,
+                pb,
+            )
 
         # Start workers that handle output
         if config.output is not None:
