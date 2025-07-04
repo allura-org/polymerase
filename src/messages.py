@@ -5,7 +5,7 @@ from http_client import AsyncHttpClient
 from typing import Self
 from httpx import Response
 
-class Message(Struct):
+class Message(Struct, omit_defaults=True):
     role: str
     content: str
     reasoning: str | None = None
@@ -24,7 +24,7 @@ class Request(Struct):
                 "model": model,
                 "messages": msgspec_json.decode(msgspec_json.encode(self.messages).decode()), # TODO: what the fuck
                 "temperature": self.temperature,
-                "top_p": self.top_p,
+                "top_p": self.top_p
             },
         )
         self._raw_response = res
