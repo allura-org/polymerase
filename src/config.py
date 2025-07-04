@@ -38,12 +38,18 @@ class OutputConfig(Struct):
     format: DataFormat | None = None
     checkpoint_interval: int | None = None
 
+class VerificationConfig(Struct):
+    # Placeholder for future verification-specific configurations
+    # For example, could specify a script path or module for the verification_fn
+    enabled: bool = True # By default, verification is enabled if the section exists
+
 class Config(Struct):
     api: APIConfig
     model: ModelConfig
     data: DataConfig
     processes: ProcessesConfig
     output: OutputConfig | None = None
+    verification: VerificationConfig | None = None # Added verification config
 
     @Result.resultify
     @staticmethod

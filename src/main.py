@@ -24,6 +24,37 @@ async def worker(http_client: AsyncHttpClient, kv_store: AsyncKVStore[str, int],
             await input_queue.enqueue(request.unwrap())
 
 @Result.resultify_async
+async def verification_worker(http_client: AsyncHttpClient, kv_store: AsyncKVStore[str, int], input_queue: AsyncQueue[Request], output_queue: AsyncQueue[Request], log: LogBar, pb: ProgressBar, config: Config, verification_fn: callable):
+    while True:
+        request_to_process = await input_queue.dequeue()
+        request_to_process_unwrapped = request_to_process.unwrap()
+        response_result = await request_to_process_unwrapped.req(http_client, config.api.model)
+
+        if is_ok(response_result):
+            processed_request = response_result.unwrap()
+            if verification_fn(processed_request):
+                log.info(f"Request {processed_request} passed verification.")
+                await output_queue.enqueue(processed_request)
+                await kv_store.set("requests_completed", (await kv_store.get("requests_completed")).unwrap() + 1)
+                pb.next()
+                pb.draw()
+            else:
+                log.warn(f"Request {processed_request} failed verification, re-adding to input queue.")
+                # Potentially add to a different queue or add metadata about verification failure
+                await input_queue.enqueue(request_to_process_unwrapped) # Re-queue the original request
+        else:
+            log.error(f"Failed to process request, readding to input queue: {response_result.unwrap_err()}")
+            await input_queue.enqueue(request_to_process_unwrapped)
+
+# Placeholder verification function
+def placeholder_verification_fn(request: Request) -> bool:
+    """
+    Placeholder verification function. Currently accepts all requests.
+    Implement actual verification logic here.
+    """
+    return True
+
+@Result.resultify_async
 async def output_worker(
     output_queue: AsyncQueue[Request],
     kv_store: AsyncKVStore[str, int],
@@ -124,7 +155,7 @@ async def main() -> Result[None]:
     async with trio.open_nursery() as nursery:
         # Start worker processes
         for _ in range(config.processes.parallel):
-            nursery.start_soon(worker, http_client, kv_store, input_queue, output_queue, log, pb, config)
+            nursery.start_soon(verification_worker, http_client, kv_store, input_queue, output_queue, log, pb, config, placeholder_verification_fn)
 
         # Start workers that handle output
         if config.output is not None:
