@@ -49,6 +49,7 @@ parallel = 2
 path = "output.jsonl"
 type = "jsonl"
 format = "messages_column"
+checkpoint_interval = 10
 ```
 
 ## license
