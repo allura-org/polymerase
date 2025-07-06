@@ -71,6 +71,7 @@ async def verification_worker(
     output_queue: AsyncQueue[Request],
     log: LogBar,
     pb: ProgressBar,
+    verification_backend: str | None,
 ) -> None:
     """Verify requests and route them to the appropriate queue."""
 
@@ -78,7 +79,7 @@ async def verification_worker(
         request_res = await verify_queue.dequeue()
         request = request_res.unwrap()
 
-        verified = verify_request(request)
+        verified = verify_request(request, backend=verification_backend)
         if is_ok(verified) and verified.unwrap():
             await output_queue.enqueue(request)
             await kv_store.set(
@@ -179,6 +180,7 @@ async def main() -> Result[None]:
                 output_queue,
                 log,
                 pb,
+                config.verification.backend if config.verification is not None else None,
             )
 
         # Start workers that handle output

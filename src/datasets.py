@@ -21,19 +21,40 @@ def convert_to_request(df: pl.DataFrame, config: Config) -> list[Request]:
     format = config.data.format
     system_prompt = config.model.system_prompt
     
+    rows = df.to_dicts()
+
+    def build_request(messages, row):
+        metadata = {k: v for k, v in row.items() if k not in {"prompt", "messages"}}
+        return Request(
+            messages=messages,
+            temperature=config.model.temperature,
+            top_p=config.model.top_p,
+            metadata=metadata,
+        )
+
     match format:
         case DataFormat.MESSAGES_COLUMN:
-            # FIXME: won't work, we need to convert the list of dicts a proper Message[]
             if system_prompt is not None:
-                return [Request(messages=([Message(role="system", content=system_prompt)] + messages), temperature=config.model.temperature, top_p=config.model.top_p) for messages in df["messages"].to_list()]
+                return [
+                    build_request([Message(role="system", content=system_prompt)] + messages, rows[idx])
+                    for idx, messages in enumerate(df["messages"].to_list())
+                ]
             else:
-                return [Request(messages=messages, temperature=config.model.temperature, top_p=config.model.top_p) for messages in df["messages"].to_list()]
+                return [
+                    build_request(messages, rows[idx])
+                    for idx, messages in enumerate(df["messages"].to_list())
+                ]
         case DataFormat.PROMPT_COLUMN:
             if system_prompt is not None:
-                return [Request(messages=[Message(role="system", content=system_prompt), Message(role="user", content=prompt)], temperature=config.model.temperature, top_p=config.model.top_p) for prompt in df["prompt"].to_list()]
+                return [
+                    build_request([Message(role="system", content=system_prompt), Message(role="user", content=prompt)], rows[idx])
+                    for idx, prompt in enumerate(df["prompt"].to_list())
+                ]
             else:
-                # FIXME: we should support a `system_prompt` column
-                return [Request(messages=[Message(role="user", content=prompt)], temperature=config.model.temperature, top_p=config.model.top_p) for prompt in df["prompt"].to_list()]
+                return [
+                    build_request([Message(role="user", content=prompt)], rows[idx])
+                    for idx, prompt in enumerate(df["prompt"].to_list())
+                ]
         case _:
             raise ValueError(f"Invalid dataset format: {format}")
 

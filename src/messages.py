@@ -2,7 +2,7 @@ from msgspec import Struct
 from msgspec import json as msgspec_json
 from result import Result, Ok, Err, is_ok
 from http_client import AsyncHttpClient
-from typing import Self
+from typing import Self, Any
 from httpx import Response
 
 class Message(Struct, omit_defaults=True):
@@ -14,6 +14,7 @@ class Request(Struct):
     messages: list[Message]
     temperature: float | None = None
     top_p: float | None = None
+    metadata: dict[str, Any] | None = None
 
     _raw_response: Result[Response] | None = None
     
@@ -38,6 +39,11 @@ class Request(Struct):
                     reasoning=res["choices"][0]["message"].get("reasoning_content"),
                 )
             ]
-            return Ok(Request(messages=messages))
+            return Ok(Request(
+                messages=messages,
+                temperature=self.temperature,
+                top_p=self.top_p,
+                metadata=self.metadata,
+            ))
         else:
             return Err(res.unwrap_err())

@@ -39,12 +39,16 @@ class OutputConfig(Struct):
     format: DataFormat | None = None
     checkpoint_interval: int | None = None
 
+class VerificationConfig(Struct):
+    backend: str | None = None
+
 class Config(Struct):
     api: APIConfig
     model: ModelConfig
     data: DataConfig
     processes: ProcessesConfig
     output: OutputConfig | None = None
+    verification: "VerificationConfig" | None = None
 
     @Result.resultify
     @staticmethod
