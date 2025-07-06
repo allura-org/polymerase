@@ -19,6 +19,15 @@ dev = [
     "pyrefly>=0.18.1",
     "ruff>=0.11.13",
 ]
+ifbench = [
+    "absl-py",
+    "langdetect",
+    "nltk",
+    "immutabledict",
+    "spacy",
+    "emoji",
+    "syllapy",
+]
 
 [tool.pyrefly]
 project-includes = ["**/*.py"]

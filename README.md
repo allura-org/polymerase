@@ -16,6 +16,9 @@ it's designed to be simple to use and configure. you just give it a `config.toml
     ```bash
     uv sync
     ```
+    # optionally install IFBench verification dependencies
+    # if you plan to use the IFBench backend
+    uv sync --group ifbench
 2.  create a `config.toml` file. you can use the example below as a starting point.
 3.  run it!
     ```bash
@@ -51,11 +54,17 @@ path = "output.jsonl"
 type = "jsonl"
 format = "messages_column"
 checkpoint_interval = 10
+
+[verification]
+# set `backend` to "ifbench" to enable IFBench-based verification
+# omit or set to "" to disable verification
+backend = ""
 ```
 
 ## license
 
 polymerase is licensed under a modified version of the [GNU General Public License v3.0](COPYING).
+The code located in `src/ifbench` is pulled from IFBench and is licensed under the Apache 2.0 license.
 
 ### output exception
 
