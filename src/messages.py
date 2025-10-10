@@ -1,6 +1,5 @@
 from msgspec import Struct
 from msgspec import json as msgspec_json
-from result import Result, Ok, Err, is_ok
 from http_client import AsyncHttpClient
 from typing import Self
 from httpx import Response
@@ -15,9 +14,9 @@ class Request(Struct):
     temperature: float | None = None
     top_p: float | None = None
 
-    _raw_response: Result[Response] | None = None
-    
-    async def req(self, http_client: AsyncHttpClient, model: str) -> Result[Self]:
+    _raw_response: Response | None = None
+
+    async def req(self, http_client: AsyncHttpClient, model: str) -> Self:
         res = await http_client.post(
             url="/chat/completions",
             json={
@@ -28,16 +27,12 @@ class Request(Struct):
             },
         )
         self._raw_response = res
-        res = res.map_ok(lambda res: res.json())
-        if is_ok(res):
-            res = res.unwrap()
-            messages = self.messages + [
-                Message(
-                    role="assistant",
-                    content=res["choices"][0]["message"]["content"],
-                    reasoning=res["choices"][0]["message"].get("reasoning_content"),
-                )
-            ]
-            return Ok(Request(messages=messages))
-        else:
-            return Err(res.unwrap_err())
+        json_response = res.json()
+        messages = self.messages + [
+            Message(
+                role="assistant",
+                content=json_response["choices"][0]["message"]["content"],
+                reasoning=json_response["choices"][0]["message"].get("reasoning_content"),
+            )
+        ]
+        return Request(messages=messages)

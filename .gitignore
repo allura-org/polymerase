@@ -10,5 +10,6 @@ wheels/
 # Virtual environments
 .venv
 
-# Config
+# Usage artifacts
 config.toml
+**/*.jsonl

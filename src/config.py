@@ -1,7 +1,6 @@
 import msgspec
 from msgspec import Struct
 from typing import Self
-from result import Result
 from enum import Enum
 
 class DataType(Enum):
@@ -20,6 +19,7 @@ class APIConfig(Struct):
 
 class ModelConfig(Struct):
     system_prompt: str | None = None
+    prefill: str | None = None
     temperature: float | None = None
     top_p: float | None = None
 
@@ -46,9 +46,8 @@ class Config(Struct):
     processes: ProcessesConfig
     output: OutputConfig | None = None
 
-    @Result.resultify
     @staticmethod
-    def from_toml(path: str) -> Self:
+    def from_toml(path: str) -> Self:  # pyright: ignore[reportGeneralTypeIssues]
         with open(path, "r") as f:
             config = msgspec.toml.decode(f.read(), type=Config)
         return config
